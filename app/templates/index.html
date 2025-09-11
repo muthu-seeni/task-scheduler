@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+{% block title %}Welcome{% endblock %}
+
+{% block content %}
+<div class="text-center mt-5">
+  <h1 class="fw-bold">Welcome to Task Scheduler</h1>
+  <p class="lead">A simple personal task reminder system for your family.</p>
+  <p class="mt-4">
+    <a class="btn btn-lg btn-primary me-2" href="{{ url_for('main.register') }}">Get Started</a>
+    <a class="btn btn-lg btn-outline-secondary" href="{{ url_for('main.login') }}">Login</a>
+  </p>
+</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+/* General body */
+body {
+    background-color: #f5f6fa;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* Cards */
+.card {
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+/* Form inputs */
+.form-control {
+    border-radius: 8px;
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+}
+
+/* Buttons */
+.btn-primary {
+    background-color: #4a90e2;
+    border-color: #4a90e2;
+    border-radius: 8px;
+    font-weight: 500;
+}
+.btn-primary:hover {
+    background-color: #357ab8;
+    border-color: #357ab8;
+}
+
+/* Links inside cards */
+.card a {
+    color: #4a90e2;
+    text-decoration: none;
+}
+.card a:hover {
+    text-decoration: underline;
+}
+
+/* Alerts */
+.alert {
+    border-radius: 8px;
+    font-size: 0.875rem;
+}
+
+/* Center form */
+.row.justify-content-center {
+    min-height: 80vh;
+    align-items: center;
+}

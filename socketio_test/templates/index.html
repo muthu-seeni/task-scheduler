@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>SocketIO Notification Test</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+  <h2>✅ SocketIO Notification Test</h2>
+  <p>Wait 10 seconds... you should see alert + browser notification + voice.</p>
+
+  <script>
+    const socket = io();
+    console.log("🔌 Connecting...");
+
+    socket.on("connect", () => {
+      console.log("✅ Socket connected to server");
+    });
+
+    socket.on("test_notification", (data) => {
+      console.log("📩 Notification received:", data);
+      alert(`${data.title}: ${data.body}`);
+
+      if (Notification.permission === "granted") {
+        new Notification(data.title, { body: data.body });
+      } else {
+        Notification.requestPermission();
+      }
+
+      const utter = new SpeechSynthesisUtterance(`${data.title}: ${data.body}`);
+      speechSynthesis.speak(utter);
+    });
+  </script>
+</body>
+</html>
