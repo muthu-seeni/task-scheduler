@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (registerForm) {
     registerForm.addEventListener("submit", (e) => {
       console.log("Register form submitted");
-      // let backend handle validation
+      // Backend will handle validation and flash messages
     });
   }
 });

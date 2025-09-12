@@ -8,26 +8,17 @@ from datetime import datetime
 
 bp = Blueprint("main", __name__)
 
-# -------------------------------
-# Startup: begin APScheduler
-# -------------------------------
 @bp.before_app_request
 def start_scheduler():
     if not scheduler.running:
         start_scheduler_func(current_app)
 
-# -------------------------------
-# Home page
-# -------------------------------
 @bp.route("/")
 def index():
     if current_user.is_authenticated:
         return redirect(url_for("main.tasks"))
     return render_template("index.html")
 
-# -------------------------------
-# Register
-# -------------------------------
 @bp.route("/register", methods=["GET", "POST"])
 @csrf.exempt
 def register():
@@ -40,9 +31,6 @@ def register():
         return auth_service.register_user(username, password)
     return render_template("register.html")
 
-# -------------------------------
-# Login
-# -------------------------------
 @bp.route("/login", methods=["GET", "POST"])
 @csrf.exempt
 def login():
@@ -55,17 +43,11 @@ def login():
         return auth_service.login_user_service(username, password)
     return render_template("login.html")
 
-# -------------------------------
-# Logout
-# -------------------------------
 @bp.route("/logout")
 @login_required
 def logout():
     return auth_service.logout_user_service()
 
-# -------------------------------
-# Task dashboard
-# -------------------------------
 @bp.route("/tasks", methods=["GET", "POST"])
 @login_required
 @csrf.exempt
@@ -76,20 +58,14 @@ def tasks():
         action = request.form.get("action") or ""
         notification_type = task_service.infer_task_type(action)
 
-        # Add & schedule
         task = task_service.add_task(title, time, action, current_user, notification_type)
         schedule_task(task)
-
         flash("✅ Task added successfully!", "success")
         return redirect(url_for("main.tasks"))
 
-    # GET: show tasks
     tasks_list = Task.query.filter_by(user_id=current_user.id).all()
     return render_template("tasks.html", tasks=tasks_list)
 
-# -------------------------------
-# Edit a task
-# -------------------------------
 @bp.route("/tasks/edit/<int:task_id>", methods=["POST"])
 @login_required
 @csrf.exempt
@@ -111,9 +87,6 @@ def edit_task(task_id):
     flash("✏️ Task updated successfully!", "success")
     return redirect(url_for("main.tasks"))
 
-# -------------------------------
-# Delete a task
-# -------------------------------
 @bp.route("/delete_task/<int:task_id>", methods=["POST"])
 @login_required
 @csrf.exempt
@@ -126,9 +99,6 @@ def delete_task(task_id):
         flash("🗑️ Task deleted successfully!", "success")
     return redirect(url_for("main.tasks"))
 
-# -------------------------------
-# Clear all tasks
-# -------------------------------
 @bp.route("/clear_tasks", methods=["POST"])
 @login_required
 @csrf.exempt
@@ -141,24 +111,35 @@ def clear_tasks():
     flash("🗑️ All tasks cleared!", "success")
     return redirect(url_for("main.tasks"))
 
-# -------------------------------
-# Run a task immediately (button)
-# -------------------------------
 @bp.route("/tasks/run_now/<int:task_id>", methods=["POST"])
 @login_required
 @csrf.exempt
 def run_task_now(task_id):
-    task_runner(task_id)  # safe, uses app context internally
-    flash("▶️ Task executed immediately!", "success")
+    task = Task.query.filter_by(id=task_id, user_id=current_user.id).first()
+    if task:
+        task_runner(task_id)
+        flash("▶️ Task executed immediately!", "success")
     return redirect(url_for("main.tasks"))
 
-# -------------------------------
-# Check notifications for browser
-# -------------------------------
+# Toggle notification per task (persist)
+@bp.route("/tasks/notify_toggle/<int:task_id>", methods=["POST"])
+@login_required
+@csrf.exempt
+def toggle_task_notification(task_id):
+    task = Task.query.filter_by(id=task_id, user_id=current_user.id).first()
+    if not task:
+        return jsonify({"success": False, "message": "Task not found"}), 404
+
+    # Flip the DB column (notify_enabled)
+    task.notify_enabled = not task.notify_enabled
+    db.session.commit()
+    return jsonify({"success": True, "notify_enabled": task.notify_enabled})
+
 @bp.route("/check_notifications")
 @login_required
 def check_notifications():
     now = datetime.now().strftime("%H:%M")
-    due_tasks = Task.query.filter_by(user_id=current_user.id, time=now).all()
-    results = [{"title": t.title or "Reminder", "body": t.action or "You have a task!"} for t in due_tasks]
+    # only return tasks that have notify_enabled True
+    due_tasks = Task.query.filter_by(user_id=current_user.id, time=now, notify_enabled=True).all()
+    results = [{"id": t.id, "title": t.title or "Reminder", "body": t.action or "You have a task!"} for t in due_tasks]
     return jsonify(results)

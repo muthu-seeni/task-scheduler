@@ -1,67 +1,95 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}TaskScheduler{% endblock %}</title>
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-        if ("Notification" in window) {
-            if (Notification.permission !== "granted") {
-            Notification.requestPermission();
-            }
-        }
-    });
-    </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}TaskScheduler{% endblock %}</title>
 
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+  <script>
+    // ask for notification permission (non-blocking)
+    document.addEventListener("DOMContentLoaded", function () {
+      if ("Notification" in window && Notification.permission !== "granted") {
+        Notification.requestPermission().catch(()=>{});
+      }
+    });
+  </script>
 </head>
-<body class="bg-light">
+
+{# Put user id on the body as a data attribute only when authenticated.
+   This avoids embedding Jinja inside script blocks and keeps JS parsing clean. #}
+<body class="bg-light"
+  {% if current_user.is_authenticated %}
+    data-user-id="{{ current_user.id }}"
+  {% endif %}
+>
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <div class="container">
-        <a class="navbar-brand" href="{{ url_for('main.index') }}">TaskScheduler</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-            <ul class="navbar-nav">
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('main.index') }}">Home</a></li>
-                {% if not current_user.is_authenticated %}
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('main.login') }}">Login</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('main.register') }}">Register</a></li>
-                {% else %}
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('main.logout') }}">Logout</a></li>
-                {% endif %}
-            </ul>
-        </div>
+  <div class="container">
+    <a class="navbar-brand" href="{{ url_for('main.index') }}">TaskScheduler</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+      <ul class="navbar-nav">
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('main.index') }}">Home</a></li>
+        {% if not current_user.is_authenticated %}
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('main.login') }}">Login</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('main.register') }}">Register</a></li>
+        {% else %}
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('main.logout') }}">Logout</a></li>
+        {% endif %}
+      </ul>
     </div>
+  </div>
 </nav>
 
 <div class="container my-3">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-    {% block content %}{% endblock %}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  {% block content %}{% endblock %}
 </div>
 
 <!-- Bootstrap JS + Popper -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <!-- Common JS -->
 <script src="{{ url_for('static', filename='js/common.js') }}"></script>
+
+<!-- Socket.IO (global singleton) -->
+<script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+  // create a single global socket (won't re-create if already present)
+  window.socket = window.socket || io();
+
+  // read user id from body data attribute (no Jinja inside this script)
+  (function() {
+      const userId = document.body.dataset.userId ? Number(document.body.dataset.userId) : null;
+      window.USER_ID = userId;
+
+      if (userId) {
+          // join a server-side room for this user
+          // server must validate the socket->user association (always validate on server)
+          window.socket.emit('join_room', { room: `user_${userId}` });
+          console.log("Socket joined room user_" + userId);
+      }
+  })();
+</script>
+
 {% block scripts %}{% endblock %}
 </body>
 </html>

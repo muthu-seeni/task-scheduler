@@ -1,7 +1,6 @@
 from app import db
 from app.models import Task
 from app.scheduler import schedule_task, cancel_task
-from flask import flash, redirect, url_for
 import re
 
 # -------------------------------
@@ -59,7 +58,6 @@ def add_task(
     db.session.add(task)
     db.session.commit()
 
-    flash("✅ Task added & scheduled!", "success")
     return task
 
 # -------------------------------
@@ -71,8 +69,7 @@ def delete_task(task_id, user):
         cancel_task(task.id)
         db.session.delete(task)
         db.session.commit()
-        flash("🗑️ Task deleted!", "info")
-    return redirect(url_for("main.tasks"))
+    return task
 
 # -------------------------------
 # Clear all tasks
@@ -83,8 +80,7 @@ def clear_tasks(user):
         cancel_task(task.id)
         db.session.delete(task)
     db.session.commit()
-    flash("🗑️ All tasks cleared!", "info")
-    return redirect(url_for("main.tasks"))
+    return len(tasks)
 
 # -------------------------------
 # Helper functions

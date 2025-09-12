@@ -6,5 +6,8 @@ Flask-WTF
 Flask-SocketIO
 eventlet
 APScheduler
+pymysql
+cryptography
 pyttsx3
 pyperclip
+python-dotenv

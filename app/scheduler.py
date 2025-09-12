@@ -5,17 +5,14 @@ from datetime import datetime
 from app.models import Task
 import pyttsx3
 
-# -------------------------------
-# Global scheduler & references
-# -------------------------------
 scheduler = BackgroundScheduler(timezone=timezone("Asia/Kolkata"))
 scheduler_started = False
-_app = None      # store Flask app instance
-_socketio = None # store SocketIO reference
+_app = None
+_socketio = None
 
-# -------------------------------
-# Start scheduler
-# -------------------------------
+# Keep track of already emitted tasks to prevent duplicates
+_emitted_tasks = set()
+
 def start_scheduler(app, socketio=None):
     global scheduler_started, _app, _socketio
     _app = app
@@ -27,48 +24,45 @@ def start_scheduler(app, socketio=None):
     if socketio:
         _socketio = socketio
 
-    # Load tasks from DB and schedule
+    # Schedule tasks from DB
     with _app.app_context():
         tasks = Task.query.filter_by(enabled=True).all()
         for task in tasks:
-            schedule_task(task)  # pass task_id automatically in schedule_task
+            schedule_task(task)
         print(f"📌 Scheduled {len(tasks)} task(s) from DB")
 
-# -------------------------------
-# Task runner
-# -------------------------------
 def task_runner(task_id):
     with _app.app_context():
         task = Task.query.get(task_id)
-        if not task:
+        if not task or task_id in _emitted_tasks:
             return
 
-        message = f"🔔 Reminder: {task.title} ({task.action})"
-        print(f"[{datetime.now()}] {message}")
+        _emitted_tasks.add(task_id)  # prevent duplicate notification
 
-        # SocketIO emit
+        title = task.title or "Reminder"
+        body = task.action or "You have a task!"
+        print(f"[{datetime.now()}] 🔔 {title}: {body}")
+
+        # Emit to the specific user only
         if _socketio:
             try:
                 _socketio.emit(
                     "task_notification",
-                    {"title": task.title, "body": task.action},
-                    broadcast=True
+                    {"id": task.id, "title": title, "body": body},
+                    room=f"user_{task.user_id}"
                 )
-                print(f"📢 Emitted notification for task {task.id}")
+                print(f"📢 Emitted notification for task {task.id} (user {task.user_id})")
             except Exception as e:
                 print(f"⚠️ SocketIO emit failed: {e}")
 
-        # Voice alert
+        # Optional voice alert
         try:
             engine = pyttsx3.init()
-            engine.say(message)
+            engine.say(f"{title}. {body}")
             engine.runAndWait()
         except Exception as e:
             print(f"⚠️ Voice alert failed: {e}")
 
-# -------------------------------
-# Schedule task
-# -------------------------------
 def schedule_task(task):
     try:
         hour, minute = map(int, task.time.split(":"))
@@ -82,17 +76,16 @@ def schedule_task(task):
     scheduler.add_job(
         func=task_runner,
         trigger=CronTrigger(hour=hour, minute=minute),
-        args=[task.id],   # ✅ pass task_id here!
+        args=[task.id],
         id=job_id,
         replace_existing=True,
     )
     print(f"✅ Scheduled task {task.id}: {task.title} at {task.time}")
 
-# -------------------------------
-# Cancel task
-# -------------------------------
 def cancel_task(task_id):
     job_id = f"task_{task_id}"
     if scheduler.get_job(job_id):
         scheduler.remove_job(job_id)
         print(f"🗑️ Cancelled task {task_id}")
+        # Also remove from emitted set to allow reschedule
+        _emitted_tasks.discard(task_id)
