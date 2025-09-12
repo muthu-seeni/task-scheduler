@@ -52,7 +52,7 @@ def create_app(testing: bool = False):
         app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['DEBUG'] = True
+    app.config['DEBUG'] = False  # 🔒 Production mode
 
     # -------------------------------
     # Initialize extensions with app
