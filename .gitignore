@@ -4,3 +4,5 @@ instance/
 *.pyc
 *.db
 .env
+".env" 
+"*.env" 
