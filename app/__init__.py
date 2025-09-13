@@ -4,6 +4,7 @@ from flask_login import LoginManager
 from flask_bcrypt import Bcrypt
 from flask_wtf import CSRFProtect
 from flask_socketio import SocketIO, join_room
+from flask_migrate import Migrate
 from datetime import datetime
 from dotenv import load_dotenv
 import os
@@ -21,6 +22,7 @@ bcrypt = Bcrypt()
 login_manager = LoginManager()
 csrf = CSRFProtect()
 socketio = SocketIO(async_mode="eventlet")  # for real-time notifications
+migrate = Migrate()  # Flask-Migrate
 
 # -------------------------------
 # SocketIO events
@@ -58,6 +60,7 @@ def create_app(testing: bool = False):
     # Initialize extensions with app
     # -------------------------------
     db.init_app(app)
+    migrate.init_app(app, db)  # <-- key for migrations
     bcrypt.init_app(app)
     login_manager.init_app(app)
     csrf.init_app(app)

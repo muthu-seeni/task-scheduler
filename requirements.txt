@@ -6,10 +6,11 @@ Flask-WTF
 Flask-SocketIO
 eventlet
 APScheduler
-pymysql
 cryptography
 pyttsx3
 pyperclip
 python-dotenv
 gunicorn==21.2.0
+Flask-Migrate
 pytz
+psycopg2-binary
