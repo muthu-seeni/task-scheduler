@@ -1,0 +1,59 @@
+
+:: Step 1: Create project folder
+cd D:\Projects
+mkdir TaskScheduler
+cd TaskScheduler
+
+:: Step 2: Create virtual environment
+python -m venv venv
+
+:: Activate virtual environment
+venv\Scripts\activate
+
+:: Step 3: Install dependencies
+pip install flask flask_sqlalchemy flask_login flask_bcrypt flask_wtf apscheduler
+
+:: Freeze dependencies
+pip freeze > requirements.txt
+
+:: Step 4: Create project folders
+mkdir app
+mkdir app\templates
+mkdir app\static
+mkdir app\static\css
+mkdir app\static\js
+mkdir app\services
+mkdir instance
+
+:: Step 5: Create starter files
+type nul > app\__init__.py
+type nul > app\routes.py
+type nul > app\models.py
+type nul > app\services\task_service.py
+type nul > app\services\reminder_service.py
+type nul > app\scheduler.py
+type nul > app\templates\layout.html
+type nul > app\templates\tasks.html
+type nul > app\static\css\style.css
+type nul > app\static\js\common.js
+type nul > app\static\js\tasks.js
+type nul > app.py
+type nul > .gitignore
+
+:: Step 6: Fill .gitignore (open manually and paste)
+venv/
+__pycache__/
+instance/
+*.pyc
+*.db
+.env
+
+:: Step 7: Initialize Git
+git init
+git add .
+git commit -m "Initial commit - Flask TaskScheduler project"
+
+:: Step 8: Add GitHub remote (replace USERNAME)
+git remote add origin https://github.com/YOUR-USERNAME/task-scheduler.git
+git branch -M main
+git push -u origin main
