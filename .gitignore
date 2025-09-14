@@ -6,3 +6,6 @@ instance/
 .env
 ".env" 
 "*.env" 
+cmd_history.txt 
+task_scheduler_setup_commands.txt 
+test/ 
